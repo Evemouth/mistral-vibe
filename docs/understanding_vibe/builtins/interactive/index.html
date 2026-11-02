@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Builtin Tools Explorer — Mistral Vibe</title>
+<style>
+  :root {
+    --bg: #111233;
+    --bg-soft: #1a1d45;
+    --bg-card: #232659;
+    --border: #3a3f7a;
+    --text: #eef1ff;
+    --text-soft: #c9d0f5;
+    --muted: #9aa5d8;
+    --accent: #6ea8ff;
+    --accent-soft: rgba(110, 168, 255, 0.16);
+    --accent-text: #b7a8ff;
+    --btn-fg: #0b1e4a;
+    --green: #3ddc97;
+    --amber: #ffc94d;
+    --red: #fb7185;
+    --glow1: rgba(110, 168, 255, 0.18);
+    --glow2: rgba(167, 139, 250, 0.14);
+    --nav-bg: rgba(17, 18, 51, 0.85);
+    --backdrop: rgba(8, 10, 35, 0.6);
+    --code-bg: rgba(183, 168, 255, 0.12);
+    --code-border: rgba(183, 168, 255, 0.32);
+    --code-text: #b7a8ff;
+    --shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 10px 26px rgba(0, 0, 0, 0.45);
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    html { scroll-behavior: auto; }
+  }
+  @media (max-width: 640px) {
+    header.hero { padding: 44px 16px 20px; }
+    nav.tabs { flex-wrap: wrap; }
+    .grid { grid-template-columns: 1fr; }
+    .panel-box { padding: 20px; }
+    .rush-btns { flex-direction: column; }
+    .theme-toggle { top: auto; bottom: 12px; }
+  }
+  body {
+    background: radial-gradient(1200px 600px at 80% -10%, var(--glow1), transparent),
+                radial-gradient(900px 500px at -10% 10%, var(--glow2), transparent),
+                var(--bg);
+    color: var(--text);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    line-height: 1.6;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  code {
+    background: var(--code-bg);
+    border: 1px solid var(--code-border);
+    border-radius: 6px;
+    padding: 1px 6px;
+    font-family: "JetBrains Mono", "Fira Code", Consolas, monospace;
+    font-size: 0.88em;
+    color: var(--code-text);
+  }
+  header.hero { text-align: center; padding: 64px 20px 28px; }
+  .eyebrow {
+    display: inline-block; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent-text); background: var(--accent-soft); border: 1px solid var(--accent);
+    border-radius: 999px; padding: 4px 14px; margin-bottom: 14px;
+  }
+  header.hero h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    background: linear-gradient(90deg, #6ea8ff, #a78bfa 50%, #d8b4fe);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  header.hero p { color: var(--muted); max-width: 720px; margin: 12px auto 0; }
+  .stats { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
+  .stat {
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 20px; text-align: center; min-width: 110px; box-shadow: var(--shadow);
+  }
+  .stat b { display: block; font-size: 1.5rem; }
+  .stat span { color: var(--muted); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  nav.tabs {
+    display: flex; gap: 8px; justify-content: center; margin: 26px auto 0; padding: 0 16px;
+    position: sticky; top: 0; z-index: 20; background: var(--nav-bg); backdrop-filter: blur(10px);
+    padding-top: 10px; padding-bottom: 10px;
+  }
+  nav.tabs button {
+    background: var(--bg-soft); color: var(--muted); border: 1px solid var(--border);
+    border-radius: 999px; padding: 9px 22px; font-size: 0.95rem; cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  nav.tabs button:hover { color: var(--text); border-color: var(--accent); }
+  nav.tabs button.active { background: var(--accent); color: var(--btn-fg); border-color: var(--accent); }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 20px 80px; }
+  section.tab-panel { display: none; animation: fadeIn 0.25s ease; }
+  section.tab-panel.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  /* Permission model cards */
+  .perm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 30px; }
+  .perm-card { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--border); border-radius: var(--radius); padding: 18px; }
+  .perm-card.ALWAYS { border-left-color: var(--green); }
+  .perm-card.ASK { border-left-color: var(--amber); }
+  .perm-card.NEVER { border-left-color: var(--red); }
+  .perm-card h3 { margin-bottom: 6px; }
+  .perm-card p { color: var(--muted); font-size: 0.92rem; }
+  .badge { display: inline-block; border-radius: 999px; padding: 3px 12px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; }
+  .badge.ALWAYS { background: rgba(61,220,151,0.16); color: var(--green); border: 1px solid rgba(61,220,151,0.5); }
+  .badge.ASK { background: rgba(255,201,77,0.16); color: var(--amber); border: 1px solid rgba(255,201,77,0.5); }
+  .badge.NEVER { background: rgba(251,113,133,0.16); color: var(--red); border: 1px solid rgba(251,113,133,0.5); }
+
+  /* Explorer */
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
+  .toolbar input[type="search"] {
+    flex: 1 1 260px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); padding: 10px 14px; font-size: 0.95rem; outline: none;
+  }
+  .toolbar input[type="search"]:focus { border-color: var(--accent); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+  .chip {
+    background: var(--bg-soft); border: 1px solid var(--border); color: var(--muted);
+    border-radius: 999px; padding: 6px 14px; font-size: 0.82rem; cursor: pointer; transition: all 0.12s ease;
+  }
+  .chip:hover { color: var(--text); }
+  .chip.active { background: var(--accent-soft); color: var(--accent-text); border-color: var(--accent); }
+
+  .result-count { color: var(--muted); font-size: 0.85rem; margin: -4px 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px; cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .card.perm-ALWAYS { border-left-color: var(--green); }
+  .card.perm-ASK { border-left-color: var(--amber); }
+  .card.perm-NEVER { border-left-color: var(--red); }
+  .card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: var(--shadow-hover); }
+  .card .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .card h3 { font-family: Consolas, monospace; font-size: 1.02rem; color: var(--accent-text); word-break: break-all; }
+  .card .variant { font-size: 0.72rem; color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 1px 7px; white-space: nowrap; }
+  .card p { color: var(--text-soft); font-size: 0.92rem; flex: 1; }
+  .card .cat { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+  .card .foot { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--muted); border-top: 1px dashed var(--border); padding-top: 8px; }
+  .card .foot .more { color: var(--accent-text); font-weight: 600; }
+  .empty { text-align: center; color: var(--muted); padding: 50px 0; }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: var(--backdrop); display: none;
+    align-items: center; justify-content: center; z-index: 50; padding: 20px;
+  }
+  .modal-backdrop.open { display: flex; animation: fadeIn 0.15s ease; }
+  @keyframes popIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: none; } }
+  .modal-backdrop.open .modal { animation: popIn 0.18s ease; }
+  .modal {
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: 16px;
+    max-width: 680px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 26px;
+    position: relative; box-shadow: var(--shadow-hover);
+  }
+  .modal h2 { font-family: Consolas, monospace; color: var(--accent-text); margin-bottom: 4px; word-break: break-all; padding-right: 40px; }
+  .modal .close {
+    position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border-radius: 50%;
+    background: var(--bg-card); border: 1px solid var(--border); color: var(--muted);
+    font-size: 1.15rem; line-height: 1; cursor: pointer; transition: all 0.12s ease;
+  }
+  .modal .close:hover { color: var(--text); border-color: var(--accent); }
+  .modal .meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 16px; }
+  .modal .meta span { font-size: 0.78rem; color: var(--muted); background: var(--bg-card); border: 1px solid var(--border); padding: 3px 10px; border-radius: 999px; }
+  .modal h4 { margin: 16px 0 8px; font-size: 0.95rem; color: var(--text); }
+  .modal table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+  .modal th, .modal td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .modal th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .modal ul { margin-left: 20px; color: var(--muted); font-size: 0.9rem; }
+  .modal p.desc { color: var(--text); font-size: 0.93rem; }
+  .req { color: var(--amber); font-weight: 700; }
+  .opt { color: var(--muted); }
+
+  /* Quiz & Rush */
+  .panel-box {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 30px; max-width: 640px; margin: 0 auto; text-align: center; box-shadow: var(--shadow);
+  }
+  .panel-box h2 { margin-bottom: 8px; }
+  .panel-box p { color: var(--muted); margin-bottom: 18px; }
+  .btn {
+    background: var(--accent); color: var(--btn-fg); border: none; border-radius: 10px;
+    padding: 12px 30px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: filter 0.12s ease;
+  }
+  .btn:hover { filter: brightness(1.15); }
+  .progress { height: 10px; background: var(--bg-soft); border-radius: 999px; overflow: hidden; margin-bottom: 20px; }
+  .progress > div { height: 100%; background: linear-gradient(90deg, var(--accent), var(--green)); transition: width 0.25s ease; }
+  .q-text { font-size: 1.15rem; margin-bottom: 20px; text-align: left; }
+  .opts { display: grid; gap: 10px; }
+  .opt-btn {
+    background: var(--bg-soft); border: 1px solid var(--border); color: var(--text);
+    border-radius: 10px; padding: 13px 16px; font-size: 0.95rem; text-align: left; cursor: pointer;
+    transition: all 0.12s ease; font-family: Consolas, monospace;
+  }
+  .opt-btn:hover:not(:disabled) { border-color: var(--accent); }
+  .opt-btn .key { display: inline-block; min-width: 1.5em; font-weight: 800; color: var(--accent-text); }
+  .opt-btn.correct { border-color: var(--green); background: rgba(61,220,151,0.16); }
+  .opt-btn.wrong { border-color: var(--red); background: rgba(251,113,133,0.16); }
+  .opt-btn:disabled { cursor: default; opacity: 0.9; }
+  .why { margin-top: 16px; text-align: left; color: var(--muted); font-size: 0.88rem; background: var(--bg-soft); border-radius: 10px; padding: 12px 14px; display: none; }
+  .why.show { display: block; }
+  .score-line { font-size: 1.05rem; margin-bottom: 14px; }
+  .big-score { font-size: 3rem; font-weight: 800; background: linear-gradient(90deg, #6ea8ff, #d8b4fe); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .rank { font-size: 1.2rem; margin: 8px 0 18px; color: var(--amber); font-weight: 700; }
+
+  .timer { height: 10px; background: var(--bg-soft); border-radius: 999px; overflow: hidden; margin-bottom: 18px; }
+  .timer > div { height: 100%; background: linear-gradient(90deg, var(--green), var(--amber), var(--red)); transition: width 0.1s linear; }
+  .rush-tool { font-family: Consolas, monospace; font-size: 1.6rem; color: var(--accent-text); margin-bottom: 6px; word-break: break-all; }
+  .rush-purpose { color: var(--muted); margin-bottom: 22px; }
+  .rush-btns { display: flex; gap: 12px; justify-content: center; }
+  .rush-btns .opt-btn { font-family: inherit; font-weight: 700; text-align: center; letter-spacing: 0.05em; }
+  .hud { display: flex; justify-content: space-between; color: var(--muted); font-size: 0.9rem; margin-bottom: 14px; }
+  .hud b { color: var(--text); }
+
+  footer { text-align: center; color: var(--muted); font-size: 0.82rem; padding: 24px 16px 40px; border-top: 1px solid var(--border); }
+  footer a { color: var(--accent-text); }
+
+  .theme-toggle {
+    position: fixed; top: 12px; right: 14px; z-index: 100;
+    background: var(--bg-soft); color: var(--text); border: 1px solid var(--border);
+    border-radius: 999px; padding: 7px 16px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    transition: border-color 0.12s ease;
+  }
+  .theme-toggle:hover { border-color: var(--accent); }
+
+  :root[data-theme="light"] {
+    --bg: #f3f5ff;
+    --bg-soft: #ffffff;
+    --bg-card: #ffffff;
+    --border: #d9def5;
+    --text: #1e2246;
+    --text-soft: #454b7d;
+    --muted: #646b9e;
+    --accent: #6d5ae8;
+    --accent-soft: rgba(109, 90, 232, 0.12);
+    --accent-text: #6d5ae8;
+    --btn-fg: #ffffff;
+    --green: #0ca678;
+    --amber: #f08c00;
+    --red: #e03131;
+    --glow1: rgba(110, 168, 255, 0.16);
+    --glow2: rgba(167, 139, 250, 0.14);
+    --nav-bg: rgba(243, 245, 255, 0.88);
+    --backdrop: rgba(30, 34, 70, 0.35);
+    --code-bg: #ece9ff;
+    --code-border: #cfc6f7;
+    --code-text: #6d5ae8;
+    --shadow: 0 4px 14px rgba(30, 34, 70, 0.10);
+    --shadow-hover: 0 10px 22px rgba(30, 34, 70, 0.16);
+  }
+  :root[data-theme="light"] .badge.ALWAYS { background: #d3f9e8; color: #0ca678; border-color: #69dbb0; }
+  :root[data-theme="light"] .badge.ASK { background: #ffec99; color: #e8890c; border-color: #ffd43b; }
+  :root[data-theme="light"] .badge.NEVER { background: #ffe3e3; color: #e03131; border-color: #ffa8a8; }
+  :root[data-theme="light"] header.hero h1 { background: linear-gradient(90deg, #4263eb, #6d5ae8 50%, #9775fa); -webkit-background-clip: text; background-clip: text; }
+  :root[data-theme="light"] .big-score { background: linear-gradient(90deg, #4263eb, #9775fa); -webkit-background-clip: text; background-clip: text; }
+  :root[data-theme="light"] .opt-btn.correct { background: #d3f9e8; border-color: #69dbb0; color: #0ca678; }
+  :root[data-theme="light"] .opt-btn.wrong { background: #ffe3e3; border-color: #ffa8a8; color: #e03131; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <button id="theme-toggle" class="theme-toggle" type="button">Light theme</button>
+  <span class="eyebrow">Mistral Vibe · builtin tools</span>
+  <h1>Builtin Tools Explorer</h1>
+  <p>An interactive tour of the tools that ship with Mistral Vibe — what each one does, the arguments it accepts, and the permission it requires by default. Built from <code>docs/understanding_vibe/builtins/builtin-tools.md</code>.</p>
+  <div class="stats" id="stats"></div>
+</header>
+
+<nav class="tabs">
+  <button data-tab="explorer" class="active">Explorer</button>
+  <button data-tab="quiz">Quiz</button>
+  <button data-tab="rush">Permission Rush</button>
+</nav>
+
+<main>
+  <!-- EXPLORER -->
+  <section class="tab-panel active" id="tab-explorer">
+    <div class="perm-grid">
+      <div class="perm-card ALWAYS"><h3><span class="badge ALWAYS">ALWAYS</span></h3><p>Runs without asking the user.</p></div>
+      <div class="perm-card ASK"><h3><span class="badge ASK">ASK</span></h3><p>The user is asked for approval before the call.</p></div>
+      <div class="perm-card NEVER"><h3><span class="badge NEVER">NEVER</span></h3><p>The tool is disabled.</p></div>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Search tools, arguments, keywords…">
+      <div class="chips" id="cat-chips"></div>
+      <div class="chips" id="perm-chips"></div>
+    </div>
+    <div class="result-count" id="result-count"></div>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty" style="display:none">No tool matches your filters.</div>
+  </section>
+
+  <!-- QUIZ -->
+  <section class="tab-panel" id="tab-quiz">
+    <div class="panel-box" id="quiz-box"></div>
+  </section>
+
+  <!-- RUSH -->
+  <section class="tab-panel" id="tab-rush">
+    <div class="panel-box" id="rush-box"></div>
+  </section>
+</main>
+
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal" id="modal"></div>
+</div>
+
+<footer>
+  Source of truth: <a href="../builtin-tools.md">builtin-tools.md</a> · code: <code>vibe/core/tools/builtins/</code> · prompts: <code>vibe/core/tools/builtins/prompts/</code><br>
+  This page is a single static file with no dependencies — open it directly (<code>file://…/interactive/index.html</code>) or serve the repo root with <code>uv run --no-project python -m http.server 8000</code> → <code>http://localhost:8000/docs/understanding_vibe/builtins/interactive/</code> (plain <code>uv run</code> without <code>--no-project</code> builds the whole project first and hangs for minutes)
+</footer>
+
+<script>
+"use strict";
+
+/* ---------- Data (mirrors builtin-tools.md) ---------- */
+
+const TOOLS = [
+  {
+    id: "read_file", name: "read_file", category: "File tools", permission: "ALWAYS", platform: "All",
+    purpose: "Read a file, with paging",
+    description: "Read a file. Use absolute paths. For large files, page through with `offset`/`limit` instead of reading everything; prefer `grep` to locate content. Binary and model-weight files (`.bin`, `.safetensors`, `.pt`, `.gguf`) must not be read.",
+    args: [
+      { name: "file_path", type: "string", req: true, def: "", desc: "Absolute path to the file" },
+      { name: "offset", type: "integer", req: false, def: "1-indexed", desc: "Line number to start reading from" },
+      { name: "limit", type: "integer", req: false, def: "2000", desc: "Maximum number of lines to read" }
+    ],
+    notes: ["Output is capped by `max_read_bytes` (config).", "Line numbers are prefixed in the output — never include them when copying text into `edit`."]
+  },
+  {
+    id: "grep", name: "grep", category: "File tools", permission: "ALWAYS", platform: "All",
+    purpose: "Regex search in file contents",
+    description: "Search file contents with a regex (ripgrep-backed). Returns matching file paths, line numbers, and lines.",
+    args: [
+      { name: "pattern", type: "string", req: true, def: "", desc: "The regex pattern" },
+      { name: "path", type: "string", req: false, def: ".", desc: "File or directory to search in (defaults to cwd)" },
+      { name: "max_matches", type: "integer", req: false, def: "", desc: "Override the default maximum number of matches" },
+      { name: "use_default_ignore", type: "boolean", req: false, def: "true", desc: "Respect `.gitignore` and `.ignore` files" }
+    ],
+    notes: ["Output is capped by `max_output_bytes` (config)."]
+  },
+  {
+    id: "write_file", name: "write_file", category: "File tools", permission: "ASK", platform: "All",
+    purpose: "Create a new file",
+    description: "Create a new file. **Errors if the file already exists** — use `edit` to modify existing files. Prefer editing existing files over creating new ones; do not proactively create documentation or README files.",
+    args: [
+      { name: "file_path", type: "string", req: true, def: "", desc: "Absolute path of the file to write" },
+      { name: "content", type: "string", req: true, def: "", desc: "The content to write" }
+    ],
+    notes: ["Fails with an error when the target file already exists."]
+  },
+  {
+    id: "edit", name: "edit", category: "File tools", permission: "ASK", platform: "All",
+    purpose: "Exact string replacement in a file",
+    description: "Exact string replacement in a file. You must `read_file` the file first. `old_string` must match exactly (including whitespace) and occur exactly once, unless `replace_all` is set — otherwise provide more context. If an edit fails, re-read the file before retrying.",
+    args: [
+      { name: "file_path", type: "string", req: true, def: "", desc: "Absolute path of the file to modify" },
+      { name: "old_string", type: "string", req: true, def: "", desc: "The text to replace" },
+      { name: "new_string", type: "string", req: true, def: "", desc: "The replacement (must differ from `old_string`)" },
+      { name: "replace_all", type: "boolean", req: false, def: "false", desc: "Replace all occurrences of `old_string`" }
+    ],
+    notes: []
+  },
+  {
+    id: "bash-simple", name: "bash", variant: "simple · stateless", category: "Shell tools", permission: "ASK", platform: "Non-Windows / simple shell",
+    purpose: "Run a one-off shell command (stateless)",
+    description: "Execute a shell command and return its output. Each call starts a **fresh shell** from the user profile — working directory, environment variables and shell functions do **not** persist between calls, so prefer absolute paths. No background execution.",
+    args: [
+      { name: "command", type: "string", req: true, def: "", desc: "The shell command to execute" },
+      { name: "timeout", type: "integer (s)", req: false, def: "300", desc: "Override the default timeout; the command is killed when it expires" }
+    ],
+    notes: ["Returns `command`, `shell`, `exit_code`, `stdout`, `stderr` (separate streams, capped by `max_output_bytes`).", "Runs under an allow/deny/ask permission model (`allowlist`, `denylist`).", "Git guidance: no interactive flags (`-i`), use `gh` for GitHub, commit/push only when asked, no co-authoring footer (added automatically)."]
+  },
+  {
+    id: "bash-managed", name: "bash", variant: "managed shell · session", category: "Shell tools", permission: "ASK", platform: "Managed-shell support",
+    purpose: "Stateful session shell (PTY, background, interactive input)",
+    description: "On platforms with managed-shell support, the simple `bash` is replaced by a **stateful session shell** with the same name plus four companion tools. Sessions run in a PTY and keep a durable log under `~/.vibe/shell-tool/sessions/`. Each call starts a **new** session; the returned `session_id` is used with `bash_output`, `bash_stdin`, `bash_sessions`.",
+    args: [
+      { name: "command", type: "string", req: true, def: "", desc: "Shell command to run" },
+      { name: "timeout_seconds", type: "float", req: false, def: "", desc: "Foreground wait time before soft/hard timeout handling" },
+      { name: "background", type: "boolean", req: false, def: "false", desc: "Return immediately with a live session (e.g. dev servers)" },
+      { name: "hard_timeout", type: "boolean", req: false, def: "false", desc: "Kill the process group on timeout instead of returning a live session" },
+      { name: "timeout", type: "int (s)", req: false, def: "", desc: "Backward-compatible hard timeout override" },
+      { name: "cwd", type: "path", req: false, def: "", desc: "Working directory override" },
+      { name: "env", type: "dict", req: false, def: "", desc: "Environment variable overrides" },
+      { name: "shell", type: "string", req: false, def: "", desc: "Shell executable override" }
+    ],
+    notes: ["A soft foreground timeout returns a live session you can poll later."]
+  },
+  {
+    id: "bash_output", name: "bash_output", category: "Shell tools", permission: "ALWAYS", platform: "Managed-shell support",
+    purpose: "Long-poll a session's output",
+    description: "Long-poll a session's output. Pass the `next_cursor` from the previous call to resume without re-reading. Returns when the process exits, the output cap is hit, the session is killed/reset, or the wait window expires.",
+    args: [
+      { name: "session_id", type: "string", req: true, def: "", desc: "Session to poll" },
+      { name: "cursor", type: "int", req: false, def: "", desc: "Byte offset into the log (use previous `next_cursor`)" },
+      { name: "wait_seconds", type: "float", req: false, def: "0", desc: "Long-poll wait window" },
+      { name: "max_bytes", type: "int", req: false, def: "", desc: "Maximum output bytes read" }
+    ],
+    notes: []
+  },
+  {
+    id: "bash_stdin", name: "bash_stdin", category: "Shell tools", permission: "ALWAYS", platform: "Managed-shell support",
+    purpose: "Send input to a session",
+    description: "Send input to a session: `session_id` plus **exactly one** of the three input modes.",
+    args: [
+      { name: "session_id", type: "string", req: true, def: "", desc: "Session to write to" },
+      { name: "text", type: "string", req: false, def: "", desc: "UTF-8 text sent exactly as provided, e.g. 'y\\n' to answer a prompt" },
+      { name: "control", type: "array", req: false, def: "", desc: "Named control keys, e.g. ['ctrl_c'] to interrupt" },
+      { name: "bytes_base64", type: "string", req: false, def: "", desc: "Raw bytes, base64-encoded" }
+    ],
+    notes: ["Exactly one of `text`, `control`, `bytes_base64` must be provided."]
+  },
+  {
+    id: "bash_sessions", name: "bash_sessions", category: "Shell tools", permission: "ALWAYS", platform: "Managed-shell support",
+    purpose: "Manage sessions",
+    description: "List, inspect, kill or reset managed-shell sessions.",
+    args: [
+      { name: "action", type: "string", req: false, def: "list", desc: "`list` | `inspect` | `kill` | `reset`" },
+      { name: "session_id", type: "string", req: false, def: "", desc: "Required for `inspect` and `kill`; ignored otherwise" },
+      { name: "clear_logs", type: "boolean", req: false, def: "false", desc: "With `reset`: also delete stored logs" }
+    ],
+    notes: ["`reset(clear_logs=true)` also deletes stored logs."]
+  },
+  {
+    id: "bash_log_file", name: "bash_log_file", category: "Shell tools", permission: "ASK", platform: "Managed-shell support",
+    purpose: "Read / annotate a session log file",
+    description: "Read (`action=\"read\"`) a session's full output file; `write`/`append` annotate it once the session has exited.",
+    args: [
+      { name: "action", type: "string", req: true, def: "", desc: "`read` | `write` | `append`" },
+      { name: "session_id", type: "string", req: false, def: "", desc: "Session whose log file to use" },
+      { name: "relative_path", type: "string", req: false, def: "", desc: "Log file path" },
+      { name: "offset", type: "int", req: false, def: "0", desc: "Byte offset to start reading from" },
+      { name: "max_bytes", type: "int", req: false, def: "", desc: "Maximum bytes read" },
+      { name: "content", type: "string", req: false, def: "", desc: "Content for `write`/`append`" }
+    ],
+    notes: []
+  },
+  {
+    id: "git_bash", name: "git_bash", variant: "family", category: "Shell tools", permission: "ASK", platform: "Windows · Git Bash",
+    purpose: "Git Bash shell on native Windows",
+    description: "The whole managed-shell family under Windows-specific names. `git_bash` runs commands with POSIX syntax in Git Bash when a usable `bash.exe` is found; the simple fallback runs each command in a fresh stateless Git Bash process. Companions: `git_bash_output`, `git_bash_stdin`, `git_bash_sessions` (ALWAYS) and `git_bash_log_file` (ASK).",
+    args: [
+      { name: "command", type: "string", req: true, def: "", desc: "Same arguments as `bash`" }
+    ],
+    notes: ["Companion permissions mirror the POSIX family: output/stdin/sessions = ALWAYS, log_file = ASK."]
+  },
+  {
+    id: "git_bash_output", name: "git_bash_output", category: "Shell tools", permission: "ALWAYS", platform: "Windows · Git Bash",
+    purpose: "Git Bash session output",
+    description: "Windows Git Bash variant of `bash_output`.", argsOf: "bash_output", notes: []
+  },
+  {
+    id: "git_bash_stdin", name: "git_bash_stdin", category: "Shell tools", permission: "ALWAYS", platform: "Windows · Git Bash",
+    purpose: "Git Bash session input",
+    description: "Windows Git Bash variant of `bash_stdin`.", argsOf: "bash_stdin", notes: []
+  },
+  {
+    id: "git_bash_sessions", name: "git_bash_sessions", category: "Shell tools", permission: "ALWAYS", platform: "Windows · Git Bash",
+    purpose: "Git Bash session management",
+    description: "Windows Git Bash variant of `bash_sessions`.", argsOf: "bash_sessions", notes: []
+  },
+  {
+    id: "git_bash_log_file", name: "git_bash_log_file", category: "Shell tools", permission: "ASK", platform: "Windows · Git Bash",
+    purpose: "Git Bash session log file",
+    description: "Windows Git Bash variant of `bash_log_file`.", argsOf: "bash_log_file", notes: []
+  },
+  {
+    id: "powershell", name: "powershell", variant: "family", category: "Shell tools", permission: "ASK", platform: "Windows · PowerShell",
+    purpose: "PowerShell shell on native Windows",
+    description: "PowerShell (`pwsh.exe`, then `powershell.exe`) on native Windows; `cmd.exe` is never used. Companions: `powershell_output`, `powershell_stdin`, `powershell_sessions` (ALWAYS) and `powershell_log_file` (ASK).",
+    args: [
+      { name: "command", type: "string", req: true, def: "", desc: "Same arguments as `bash`" }
+    ],
+    notes: ["Companion permissions mirror the POSIX family."]
+  },
+  {
+    id: "powershell_output", name: "powershell_output", category: "Shell tools", permission: "ALWAYS", platform: "Windows · PowerShell",
+    purpose: "PowerShell session output",
+    description: "Windows PowerShell variant of `bash_output`.", argsOf: "bash_output", notes: []
+  },
+  {
+    id: "powershell_stdin", name: "powershell_stdin", category: "Shell tools", permission: "ALWAYS", platform: "Windows · PowerShell",
+    purpose: "PowerShell session input",
+    description: "Windows PowerShell variant of `bash_stdin`.", argsOf: "bash_stdin", notes: []
+  },
+  {
+    id: "powershell_sessions", name: "powershell_sessions", category: "Shell tools", permission: "ALWAYS", platform: "Windows · PowerShell",
+    purpose: "PowerShell session management",
+    description: "Windows PowerShell variant of `bash_sessions`.", argsOf: "bash_sessions", notes: []
+  },
+  {
+    id: "powershell_log_file", name: "powershell_log_file", category: "Shell tools", permission: "ASK", platform: "Windows · PowerShell",
+    purpose: "PowerShell session log file",
+    description: "Windows PowerShell variant of `bash_log_file`.", argsOf: "bash_log_file", notes: []
+  },
+  {
+    id: "web_search", name: "web_search", category: "Web tools", permission: "ASK", platform: "Needs a Mistral API key",
+    purpose: "Search the web, returns cited answers",
+    description: "Search the web for current information. Returns answers with cited sources. Use for recent events, updated docs, and version checks. Only available when a Mistral API key is configured (otherwise the tool is hidden).",
+    args: [
+      { name: "query", type: "string", req: true, def: "", desc: "The search query" }
+    ],
+    notes: ["Config: `timeout` (default 120 s) and the Mistral model used for search."]
+  },
+  {
+    id: "web_fetch", name: "web_fetch", category: "Web tools", permission: "ASK", platform: "All",
+    purpose: "Fetch a URL and return its content as markdown",
+    description: "Fetch content from a URL, returned as markdown. Read-only.",
+    args: [
+      { name: "url", type: "string", req: true, def: "", desc: "The URL to fetch" },
+      { name: "timeout", type: "integer (s)", req: false, def: "30 (max 120)", desc: "Override the default timeout" }
+    ],
+    notes: ["Returned content is capped by `max_content_bytes` (default 120 000 bytes)."]
+  },
+  {
+    id: "ask_user_question", name: "ask_user_question", category: "Interaction tools", permission: "ALWAYS", platform: "All",
+    purpose: "Ask the user structured multiple-choice questions",
+    description: "Ask the user one or more structured questions with options. An \"Other\" free-text option is added automatically to each question.",
+    args: [
+      { name: "questions", type: "array", req: true, def: "min 1 (1–4 recommended)", desc: "Each: `question`, `header` (max 20 chars), `options` (min 2, 2–4 recommended), `multi_select`, `hide_other`" },
+      { name: "footer_note", type: "string", req: false, def: "", desc: "Subtle note at the bottom of the question widget" }
+    ],
+    notes: ["Returns the answers, each with the original question, the answer, and whether it was a custom \"Other\" answer."]
+  },
+  {
+    id: "skill", name: "skill", category: "Interaction tools", permission: "ALWAYS", platform: "All",
+    purpose: "Load a skill by name",
+    description: "Load a specialized skill by name (from `available_skills`) and follow the returned instructions step by step.",
+    args: [
+      { name: "name", type: "string", req: true, def: "", desc: "The name of the skill" }
+    ],
+    notes: ["Returns the skill name, the full skill content block, and optionally the skill directory path."]
+  },
+  {
+    id: "task", name: "task", category: "Interaction tools", permission: "ASK", platform: "All",
+    purpose: "Launch a subagent for a complex task",
+    description: "Launch a subagent for complex multi-step work. Provide a self-contained description; the subagent runs read-only and returns a final message — summarize it to the user yourself.",
+    args: [
+      { name: "task", type: "string", req: true, def: "", desc: "The task for the subagent" },
+      { name: "agent", type: "string", req: false, def: "\"explore\"", desc: "The type of specialized subagent to use" }
+    ],
+    notes: ["Returns the subagent's final message and execution metadata (turns used, completion)."]
+  },
+  {
+    id: "todo", name: "todo", category: "Interaction tools", permission: "ALWAYS", platform: "All",
+    purpose: "Read or replace the session todo list",
+    description: "Track tasks for the current session. `action: \"write\"` replaces the **full** list, so include every item you want to keep. Keep it current: after each step, mark it completed and the next one `in_progress`.",
+    args: [
+      { name: "action", type: "string", req: true, def: "", desc: "`read` to view, `write` to replace the full list" },
+      { name: "todos", type: "array", req: false, def: "", desc: "Items: `id`, `content`, `status` (pending | in_progress | completed | cancelled), `priority` (low | medium | high)" }
+    ],
+    notes: ["The list is capped at `max_todos` (default 100)."]
+  },
+  {
+    id: "exit_plan_mode", name: "exit_plan_mode", category: "Interaction tools", permission: "ALWAYS", platform: "Plan mode only",
+    purpose: "Signal that the plan is ready for implementation",
+    description: "Signal that your plan is complete and ready for implementation. Call only after finalizing the plan. When the user chooses to proceed, they are offered options to auto-approve or keep requesting approval for edits.",
+    args: [],
+    notes: ["No arguments. Raises an error outside plan mode."]
+  }
+];
+
+const QUIZ = [
+  { q: "Which permission level lets a tool run without asking the user?", opts: ["ALWAYS", "ASK", "NEVER", "AUTO"], a: 0, why: "`ALWAYS` runs without asking; `ASK` prompts the user; `NEVER` disables the tool." },
+  { q: "What is the default `limit` of `read_file`?", opts: ["500 lines", "2000 lines", "5000 lines", "10000 lines"], a: 1, why: "`DEFAULT_LINE_LIMIT = 2000` in read_file.py." },
+  { q: "What happens when `write_file` targets an existing file?", opts: ["It overwrites it", "It appends to it", "It errors — use `edit` instead", "It silently skips"], a: 2, why: "write_file errors if the file already exists; use `edit` to modify existing files." },
+  { q: "What is the default timeout of the simple `bash` tool?", opts: ["30 s", "120 s", "300 s", "600 s"], a: 2, why: "`default_timeout = 300` seconds in bash.py." },
+  { q: "What is the default permission of `bash_output`?", opts: ["ASK", "ALWAYS", "NEVER", "Depends on the OS"], a: 1, why: "`BashOutputConfig` is ALWAYS — the session companions (output/stdin/sessions) are ALWAYS." },
+  { q: "What is the default permission of `bash_log_file`?", opts: ["ALWAYS", "ASK", "NEVER", "ALWAYS on Windows only"], a: 1, why: "`BashLogFileConfig` is ASK — the exception in the session family." },
+  { q: "In one `bash_stdin` call, how many input modes can you use?", opts: ["Exactly one", "Any two", "All three", "None — it is read-only"], a: 0, why: "Exactly one of `text`, `control`, or `bytes_base64`." },
+  { q: "What is the maximum `timeout` accepted by `web_fetch`?", opts: ["30 s", "60 s", "120 s", "300 s"], a: 2, why: "`max_timeout = 120` s; the default is 30 s." },
+  { q: "What is the default `max_content_bytes` of `web_fetch`?", opts: ["50 000", "120 000", "1 000 000", "Unlimited"], a: 1, why: "`max_content_bytes` defaults to 120 000 bytes." },
+  { q: "`web_search` is hidden unless…", opts: ["a Mistral API key is configured", "you are offline", "plan mode is on", "a proxy is set"], a: 0, why: "`is_available()` requires a resolvable Mistral API key." },
+  { q: "What is the default `agent` of the `task` tool?", opts: ["\"explore\"", "\"plan\"", "\"review\"", "\"build\""], a: 0, why: "`TaskArgs.agent` defaults to \"explore\"." },
+  { q: "What is the default cap of the `todo` list (`max_todos`)?", opts: ["10", "50", "100", "1000"], a: 2, why: "`max_todos = 100` in todo.py." },
+  { q: "What is the minimum number of `options` per `ask_user_question` question?", opts: ["1", "2", "4", "0"], a: 1, why: "`options` has `min_length=2`; an automatic \"Other\" is added on top." },
+  { q: "The default `sensitive_patterns` of file tools cover…", opts: ["private keys", "dotenv files (.env, .envrc…)", "images", "all dotfiles"], a: 1, why: "`DEFAULT_SENSITIVE_PATTERNS` covers only `.env*` / `.envrc*` patterns." },
+  { q: "Where do the builtin tools live in the codebase?", opts: ["vibe/cli/tools/", "vibe/core/tools/builtins/", "vibe/acp/tools/", "plugins/tools/"], a: 1, why: "`vibe/core/tools/builtins/`, with model-facing prompts in `…/prompts/`." },
+  { q: "How is a tool name derived from its class name?", opts: ["Lowercased verbatim", "snake_case of the class name, unless `get_name()` is overridden", "kebab-case", "The file name"], a: 1, why: "`BaseTool.get_name()` snake_cases the class name (e.g. `ReadFile` → `read_file`)." },
+  { q: "Which tool can only be used in plan mode?", opts: ["exit_plan_mode", "task", "skill", "todo"], a: 0, why: "exit_plan_mode raises a ToolError outside plan mode." },
+  { q: "True or false: the managed `bash` accepts `session_id` to reuse an existing session.", opts: ["True", "False"], a: 1, why: "Each call starts a NEW session; the returned `session_id` is used with `bash_output` / `bash_stdin` / `bash_sessions`." },
+  { q: "Which files must `read_file` never read?", opts: ["Binary and model-weight files (.bin, .safetensors, .pt, .gguf)", "Markdown files", "Files over 50 KB", "Dotfiles"], a: 0, why: "read_file's prompt forbids binary / model-weight files." }
+];
+
+const RUSH_IDS = ["read_file","grep","write_file","edit","bash-simple","bash-managed","bash_output","bash_stdin","bash_sessions","bash_log_file","git_bash","powershell","web_search","web_fetch","ask_user_question","skill","task","todo","exit_plan_mode"];
+
+/* ---------- Helpers ---------- */
+
+function esc(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function md(s) {
+  return esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+}
+function argsOf(tool) {
+  if (tool.args) return tool.args;
+  const base = TOOLS.find(t => t.id === tool.argsOf);
+  return base ? base.args : [];
+}
+function $(sel) { return document.querySelector(sel); }
+
+/* ---------- Tabs ---------- */
+
+document.querySelectorAll("nav.tabs button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll("nav.tabs button").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll("section.tab-panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    $("#tab-" + btn.dataset.tab).classList.add("active");
+  });
+});
+
+/* ---------- Stats ---------- */
+
+(function stats() {
+  const total = TOOLS.length;
+  const always = TOOLS.filter(t => t.permission === "ALWAYS").length;
+  const ask = TOOLS.filter(t => t.permission === "ASK").length;
+  $("#stats").innerHTML =
+    '<div class="stat"><b>' + total + '</b><span>tools</span></div>' +
+    '<div class="stat"><b style="color:var(--green)">' + always + '</b><span>ALWAYS</span></div>' +
+    '<div class="stat"><b style="color:var(--amber)">' + ask + '</b><span>ASK</span></div>' +
+    '<div class="stat"><b>' + QUIZ.length + '</b><span>quiz questions</span></div>';
+})();
+
+/* ---------- Explorer ---------- */
+
+const state = { q: "", cat: "All", perm: "All" };
+const CATS = ["All", "File tools", "Shell tools", "Web tools", "Interaction tools"];
+const PERMS = ["All", "ALWAYS", "ASK"];
+
+function renderChips() {
+  $("#cat-chips").innerHTML = CATS.map(c => {
+    const n = c === "All" ? TOOLS.length : TOOLS.filter(t => t.category === c).length;
+    return '<button class="chip' + (state.cat === c ? " active" : "") + '" data-cat="' + c + '">' + c + ' <b>' + n + "</b></button>";
+  }).join("");
+  $("#perm-chips").innerHTML = PERMS.map(p => {
+    const n = p === "All" ? TOOLS.length : TOOLS.filter(t => t.permission === p).length;
+    return '<button class="chip' + (state.perm === p ? " active" : "") + '" data-perm="' + p + '">' + p + ' <b>' + n + "</b></button>";
+  }).join("");
+  document.querySelectorAll("#cat-chips .chip").forEach(ch => ch.addEventListener("click", () => { state.cat = ch.dataset.cat; renderChips(); renderGrid(); }));
+  document.querySelectorAll("#perm-chips .chip").forEach(ch => ch.addEventListener("click", () => { state.perm = ch.dataset.perm; renderChips(); renderGrid(); }));
+}
+
+function renderGrid() {
+  const q = state.q.toLowerCase();
+  const list = TOOLS.filter(t => {
+    if (state.cat !== "All" && t.category !== state.cat) return false;
+    if (state.perm !== "All" && t.permission !== state.perm) return false;
+    if (q) {
+      const hay = (t.name + " " + t.purpose + " " + t.description + " " + t.platform + " " + t.permission + " " +
+        argsOf(t).map(a => a.name + " " + a.desc).join(" ")).toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  $("#grid").innerHTML = list.map(t => {
+    const nArgs = argsOf(t).length;
+    return '<div class="card perm-' + t.permission + '" data-id="' + t.id + '">' +
+      '<div class="top"><h3>' + esc(t.name) + "</h3>" +
+      '<span class="badge ' + t.permission + '">' + t.permission + "</span></div>" +
+      (t.variant ? '<span class="variant">' + esc(t.variant) + "</span>" : "") +
+      '<span class="cat">' + esc(t.category) + " · " + esc(t.platform) + "</span>" +
+      "<p>" + md(t.purpose) + "</p>" +
+      '<div class="foot"><span>' + (nArgs ? nArgs + " arg" + (nArgs > 1 ? "s" : "") : "no args") + '</span><span class="more">View details</span></div>' +
+    "</div>";
+  }).join("");
+  $("#result-count").textContent = "Showing " + list.length + " of " + TOOLS.length + " tools";
+  $("#empty").style.display = list.length ? "none" : "block";
+  document.querySelectorAll("#grid .card").forEach(c => c.addEventListener("click", () => openModal(c.dataset.id)));
+}
+
+$("#search").addEventListener("input", e => { state.q = e.target.value; renderGrid(); });
+
+function openModal(id) {
+  const t = TOOLS.find(x => x.id === id);
+  if (!t) return;
+  const args = argsOf(t);
+  $("#modal").innerHTML =
+    '<button class="close" id="modal-close">×</button>' +
+    "<h2>" + esc(t.name) + (t.variant ? ' <span class="variant">' + esc(t.variant) + "</span>" : "") + "</h2>" +
+    '<div class="meta"><span class="badge ' + t.permission + '">' + t.permission + "</span>" +
+    "<span>" + esc(t.category) + "</span><span>" + esc(t.platform) + "</span></div>" +
+    '<p class="desc">' + md(t.description) + "</p>" +
+    (args.length ? "<h4>Arguments</h4><table><tr><th>Name</th><th>Type</th><th>Req.</th><th>Default</th><th>Description</th></tr>" +
+      args.map(a => "<tr><td><code>" + esc(a.name) + "</code></td><td>" + esc(a.type) + "</td><td>" +
+        (a.req ? '<span class="req">required</span>' : '<span class="opt">optional</span>') + "</td><td>" + esc(a.def || "—") +
+        "</td><td>" + md(a.desc) + "</td></tr>").join("") + "</table>" : "<h4>Arguments</h4><p class='desc'>None.</p>") +
+    (t.notes.length ? "<h4>Notes</h4><ul>" + t.notes.map(n => "<li>" + md(n) + "</li>").join("") + "</ul>" : "");
+  $("#modal-backdrop").classList.add("open");
+  $("#modal-close").addEventListener("click", closeModal);
+}
+function closeModal() { $("#modal-backdrop").classList.remove("open"); }
+$("#modal-backdrop").addEventListener("click", e => { if (e.target.id === "modal-backdrop") closeModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
+
+/* ---------- Quiz ---------- */
+
+const quiz = { order: [], idx: 0, score: 0, locked: false };
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function quizStart() {
+  quiz.order = shuffle(QUIZ).slice(0, 10);
+  quiz.idx = 0; quiz.score = 0; quiz.locked = false;
+  quizQuestion();
+}
+
+function quizQuestion() {
+  const box = $("#quiz-box");
+  if (quiz.idx >= quiz.order.length) return quizEnd();
+  const item = quiz.order[quiz.idx];
+  quiz.locked = false;
+  box.innerHTML =
+    '<div class="progress"><div style="width:' + (quiz.idx / quiz.order.length * 100) + '%"></div></div>' +
+    '<div class="score-line">Question <b>' + (quiz.idx + 1) + "</b> / " + quiz.order.length + " · Score: <b>" + quiz.score + "</b></div>" +
+    '<div class="q-text">' + md(item.q) + "</div>" +
+    '<div class="opts">' + item.opts.map((o, i) => '<button class="opt-btn" data-i="' + i + '"><span class="key">' + "ABCD"[i] + '</span> ' + md(o) + "</button>").join("") + "</div>" +
+    '<div class="why" id="why"></div>';
+  box.querySelectorAll(".opt-btn").forEach(b => b.addEventListener("click", () => quizAnswer(item, parseInt(b.dataset.i, 10), b)));
+}
+
+function quizAnswer(item, i, btn) {
+  if (quiz.locked) return;
+  quiz.locked = true;
+  const correct = i === item.a;
+  if (correct) quiz.score += 10;
+  document.querySelectorAll("#quiz-box .opt-btn").forEach(b => {
+    b.disabled = true;
+    if (parseInt(b.dataset.i, 10) === item.a) b.classList.add("correct");
+  });
+  if (!correct) btn.classList.add("wrong");
+  const why = $("#why");
+  why.innerHTML = (correct ? "Correct! +10 — " : "Not quite — ") + md(item.why);
+  why.classList.add("show");
+  setTimeout(() => { quiz.idx++; quizQuestion(); }, correct ? 900 : 2200);
+}
+
+function quizEnd() {
+  const max = quiz.order.length * 10;
+  const pct = quiz.score / max;
+  const rank = pct === 1 ? "Tool Master" : pct >= 0.8 ? "Permission Pro" : pct >= 0.5 ? "Getting there" : "Back to the docs";
+  $("#quiz-box").innerHTML =
+    '<h2>Quiz complete</h2>' +
+    '<div class="big-score">' + quiz.score + " / " + max + "</div>" +
+    '<div class="rank">' + rank + "</div>" +
+    '<p>' + (pct === 1 ? "Flawless. The builtin tools fear you." : "Review the tool cards in the Explorer tab and try again.") + "</p>" +
+    '<button class="btn" id="quiz-restart">Play again</button>';
+  $("#quiz-restart").addEventListener("click", quizStart);
+}
+
+function quizInit() {
+  $("#quiz-box").innerHTML =
+    "<h2>Builtin Tools Quiz</h2>" +
+    "<p>10 questions drawn from the builtin tools documentation. How well do you know the toolbelt?</p>" +
+    '<button class="btn" id="quiz-start">Start quiz</button>';
+  $("#quiz-start").addEventListener("click", quizStart);
+}
+
+/* ---------- Permission Rush ---------- */
+
+const rush = { score: 0, streak: 0, best: 0, timeLeft: 30, timer: null, current: null, playing: false };
+
+function rushStart() {
+  rush.score = 0; rush.streak = 0; rush.timeLeft = 30; rush.playing = true;
+  rush.best = parseInt(localStorage.getItem("vibe-rush-best") || "0", 10);
+  clearInterval(rush.timer);
+  rush.timer = setInterval(rushTick, 100);
+  rushNext();
+}
+
+function rushTick() {
+  rush.timeLeft -= 0.1;
+  if (rush.timeLeft <= 0) return rushEnd();
+  const bar = document.querySelector("#rush-timer > div");
+  if (bar) bar.style.width = (rush.timeLeft / 30 * 100) + "%";
+  const timeEl = document.querySelector("#rush-time");
+  if (timeEl) timeEl.textContent = rush.timeLeft.toFixed(1);
+}
+
+function rushNext() {
+  const pool = RUSH_IDS.map(id => TOOLS.find(t => t.id === id)).filter(Boolean);
+  rush.current = pool[Math.floor(Math.random() * pool.length)];
+  const box = $("#rush-box");
+  box.innerHTML =
+    '<div class="hud"><span>Score: <b>' + rush.score + "</b></span><span>Streak: <b>" + rush.streak + "</b></span><span>Time: <b id=\"rush-time\">30.0</b>s</span><span>Best: <b>" + rush.best + "</b></span></div>" +
+    '<div class="timer" id="rush-timer"><div style="width:100%"></div></div>' +
+    '<div class="rush-tool">' + esc(rush.current.name) + (rush.current.variant ? " (" + esc(rush.current.variant) + ")" : "") + "</div>" +
+    '<div class="rush-purpose">' + md(rush.current.purpose) + "</div>" +
+    '<div class="rush-btns">' +
+      '<button class="opt-btn" data-p="ALWAYS">ALWAYS</button>' +
+      '<button class="opt-btn" data-p="ASK">ASK</button>' +
+      '<button class="opt-btn" data-p="NEVER">NEVER</button>' +
+    "</div>" +
+    '<p style="margin-top:16px">What is its <b>default permission</b>?</p>';
+  box.querySelectorAll(".rush-btns .opt-btn").forEach(b => b.addEventListener("click", () => rushAnswer(b.dataset.p, b)));
+}
+
+function rushAnswer(p, btn) {
+  if (!rush.playing) return;
+  const correct = p === rush.current.permission;
+  if (correct) {
+    rush.streak++;
+    rush.score += 10 + Math.min(rush.streak - 1, 5) * 5;
+    btn.classList.add("correct");
+  } else {
+    rush.streak = 0;
+    btn.classList.add("wrong");
+    document.querySelectorAll('.rush-btns .opt-btn').forEach(b => {
+      if (b.dataset.p === rush.current.permission) b.classList.add("correct");
+    });
+  }
+  setTimeout(rushNext, correct ? 350 : 900);
+}
+
+function rushEnd() {
+  rush.playing = false;
+  clearInterval(rush.timer);
+  if (rush.score > rush.best) {
+    rush.best = rush.score;
+    localStorage.setItem("vibe-rush-best", String(rush.score));
+  }
+  $("#rush-box").innerHTML =
+    "<h2>Time's up!</h2>" +
+    '<div class="big-score">' + rush.score + "</div>" +
+    '<div class="rank">Best: ' + rush.best + "</div>" +
+    "<p>You named the default permission of random builtin tools against the clock.</p>" +
+    '<button class="btn" id="rush-restart">Play again</button>';
+  $("#rush-restart").addEventListener("click", rushStart);
+}
+
+function rushInit() {
+  $("#rush-box").innerHTML =
+    "<h2>Permission Rush</h2>" +
+    "<p>A random tool appears — call its <b>default permission</b> (ALWAYS / ASK / NEVER) before the 30-second timer runs out. Streaks earn bonus points.</p>" +
+    '<button class="btn" id="rush-start">Start</button>';
+  $("#rush-start").addEventListener("click", rushStart);
+}
+
+/* ---------- Theme ---------- */
+
+function initTheme() {
+  const saved = localStorage.getItem("vibe-theme");
+  const prefersLight = typeof window !== "undefined" && window.matchMedia
+    && window.matchMedia("(prefers-color-scheme: light)").matches;
+  const theme = saved === "light" || saved === "dark" ? saved : (prefersLight ? "light" : "dark");
+  document.documentElement.dataset.theme = theme;
+  const btn = $("#theme-toggle");
+  const label = () => {
+    btn.textContent = document.documentElement.dataset.theme === "light" ? "Dark theme" : "Light theme";
+  };
+  label();
+  btn.addEventListener("click", () => {
+    const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem("vibe-theme", next);
+    label();
+  });
+}
+
+/* ---------- Boot ---------- */
+
+initTheme();
+renderChips();
+renderGrid();
+quizInit();
+rushInit();
+</script>
+</body>
+</html>
