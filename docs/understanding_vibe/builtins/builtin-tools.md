@@ -14,7 +14,7 @@ Every tool has a default permission level (`ToolPermission`, see `vibe/core/tool
 | `ASK` | The user is asked for approval before each call (or per session, depending on the approval flow). |
 | `NEVER` | The tool is disabled. |
 
-The default can be changed per tool in the Vibe configuration. File-based tools (`read_file`, `grep`, `edit`, `write_file`) additionally declare `sensitive_patterns`: file patterns that trigger an `ASK` even when the tool is configured as `ALWAYS` (e.g. `.env` files, private keys).
+The default can be changed per tool in the Vibe configuration. File-based tools (`read_file`, `grep`, `edit`, `write_file`) additionally declare `sensitive_patterns`: file patterns that trigger an `ASK` even when the tool is configured as `ALWAYS`. The defaults (`DEFAULT_SENSITIVE_PATTERNS` in `vibe/core/tools/utils.py`) cover dotenv files: `**/.env`, `**/.env.*`, `**/.env~`, `**/.envrc`, `**/.envrc.*`, `**/.envrc~`.
 
 ## Tool overview
 
@@ -25,9 +25,12 @@ The default can be changed per tool in the Vibe configuration. File-based tools 
 | `write_file` | `ASK` | Always | Create a new file |
 | `edit` | `ASK` | Always | Exact string replacement in a file |
 | `bash` | `ASK` | Non-Windows / any OS with the simple shell | Run a one-off shell command (stateless) |
-| `bash`, `bash_output`, `bash_stdin`, `bash_sessions`, `bash_log_file` | `ASK` | Non-Windows with managed-shell support | Session-based shell (PTY, background, interactive input) — replaces `bash` when available |
-| `git_bash` (+ `git_bash_output`, `git_bash_stdin`, `git_bash_sessions`, `git_bash_log_file`) | `ASK` | Windows with Git Bash available | Git Bash shell on native Windows |
-| `powershell` (+ `powershell_output`, `powershell_stdin`, `powershell_sessions`, `powershell_log_file`) | `ASK` | Windows with PowerShell available | PowerShell shell on native Windows |
+| `bash` (managed shell), `bash_log_file` | `ASK` | Non-Windows with managed-shell support | Session-based shell (PTY, background, interactive input) — replaces `bash` when available |
+| `bash_output`, `bash_stdin`, `bash_sessions` | `ALWAYS` | Non-Windows with managed-shell support | Companion tools to poll output, send input, and manage managed-shell sessions |
+| `git_bash`, `git_bash_log_file` | `ASK` | Windows with Git Bash available | Git Bash shell on native Windows |
+| `git_bash_output`, `git_bash_stdin`, `git_bash_sessions` | `ALWAYS` | Windows with Git Bash available | Git Bash session companions |
+| `powershell`, `powershell_log_file` | `ASK` | Windows with PowerShell available | PowerShell shell on native Windows |
+| `powershell_output`, `powershell_stdin`, `powershell_sessions` | `ALWAYS` | Windows with PowerShell available | PowerShell session companions |
 | `web_search` | `ASK` | Requires a Mistral API key | Search the web, returns cited answers |
 | `web_fetch` | `ASK` | Always | Fetch a URL and return its content as markdown |
 | `ask_user_question` | `ALWAYS` | Always | Ask the user structured multiple-choice questions |
@@ -102,9 +105,9 @@ The command runs under a permission model (allow / deny / ask) with allow/deny l
 
 On platforms where the managed-shell backend is supported, the simple `bash` is replaced by a **stateful session shell** with the same `bash` name, plus four companion tools. Sessions run in a PTY and keep a durable log file under `~/.vibe/shell-tool/sessions/`.
 
-- **`bash`** — run a command in a session. Key arguments: `command`, `timeout_seconds`, `background` (keep long-running processes alive, e.g. dev servers), `hard_timeout` (kill the process group on timeout instead of returning a live session), `session_id` (reuse a session). A soft foreground timeout returns a live session you can poll later.
+- **`bash`** — run a command in a session. Each call starts a **new** session; the returned `session_id` is then used with the companion tools below (`bash_output`, `bash_stdin`, `bash_sessions`). Key arguments: `command`, `timeout_seconds`, `background` (keep long-running processes alive, e.g. dev servers), `hard_timeout` (kill the process group on timeout instead of returning a live session), plus `timeout`, `cwd`, `env`, `shell`. A soft foreground timeout returns a live session you can poll later.
 - **`bash_output`** — long-poll a session's output: `session_id`, `cursor` (byte offset into the log; pass the `next_cursor` from the previous call to resume without re-reading), `wait_seconds`, `max_bytes`. Returns when the process exits, the output cap is hit, the session is killed/reset, or the wait window expires.
-- **`bash_stdin`** — send input to a session: `session_id`, `text` (e.g. `"y\n"` to answer a prompt) or `control` (e.g. `["ctrl_c"]` to interrupt).
+- **`bash_stdin`** — send input to a session: `session_id` plus exactly one of `text` (e.g. `"y\n"` to answer a prompt), `control` (e.g. `["ctrl_c"]` to interrupt), or `bytes_base64` (raw bytes, base64-encoded).
 - **`bash_sessions`** — manage sessions: `action` = `list` | `inspect` | `kill` | `reset` (with `session_id` for `inspect`/`kill`; `reset(clear_logs=true)` also deletes stored logs).
 - **`bash_log_file`** — read (`action="read"`) a session's full output file; `write`/`append` annotate it once the session has exited.
 
@@ -146,10 +149,10 @@ Ask the user one or more structured questions with options. An "Other" free-text
 
 Arguments:
 
-- `questions` (array, required, 1–4 items). Each question has:
+- `questions` (array, required, at least 1 item; 1–4 recommended). Each question has:
   - `question` (string, required): the question text.
   - `header` (string, optional, max 20 chars): short chip/tag label.
-  - `options` (array, required, 2–4 items): each with a `label` and an optional `description`.
+  - `options` (array, required, at least 2 items; 2–4 recommended, not counting the automatic "Other"): each with a `label` and an optional `description`.
   - `multi_select` (boolean, default `false`): allow selecting multiple options.
   - `hide_other` (boolean, default `false`): hide the free-text "Other" option.
 - `footer_note` (string, optional): subtle note displayed at the bottom of the question widget.
@@ -196,6 +199,7 @@ Arguments: none.
 
 ## Related documentation
 
-- [ADR 0004 — Typed Permissioned Tools](adr/0004-typed-permissioned-tools.md) — tool contracts, permissions, and output.
-- [ADR 0007 — Extension Mechanisms](adr/0007-extension-mechanisms.md) — skills, subagents, and custom tools alongside the builtins.
+- [ADR 0004 — Typed Permissioned Tools](../../adr/0004-typed-permissioned-tools.md) — tool contracts, permissions, and output.
+- [ADR 0007 — Extension Mechanisms](../../adr/0007-extension-mechanisms.md) — skills, subagents, and custom tools alongside the builtins.
 - Tool source code: `vibe/core/tools/builtins/`; model-facing descriptions: `vibe/core/tools/builtins/prompts/`.
+- [Interactive explorer](interactive/index.html) — a single-file interactive site (searchable tool cards, quiz, permission game) built from this document. It is a single static file with no dependencies: either open `docs/understanding_vibe/builtins/interactive/index.html` directly in a browser (double-click or `file://` URL), or serve the repo root with `uv run --no-project python -m http.server 8000` and open `http://localhost:8000/docs/understanding_vibe/builtins/interactive/`. Note: plain `uv run python -m http.server` first builds the whole project and can hang for minutes before serving anything — for a static file server, always use `--no-project`.
